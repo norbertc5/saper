@@ -13,22 +13,27 @@ public class Grid : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        GameManager.cells = new Cell[width, height];
+        GameManager.width = width;
+        GameManager.height = height;
+
         // generate grid
 
         // set position of board in middle
         Vector2 position = -(new Vector3(width * cellPrefab.transform.localScale.x, height * cellPrefab.transform.localScale.y) 
             - cellPrefab.transform.localScale) / 2; 
 
-        for (int i = 0; i < height; i++)
+        for (int y = 0; y < height; y++)
         {
-            for (int j = 0; j < width; j++)
+            for (int x = 0; x < width; x++)
             {
-                var newCell = Instantiate(cellPrefab, position, Quaternion.identity, transform);
-                newCell.name = $"Cell ({j}, {i})";
+                GameObject newCell = Instantiate(cellPrefab, position, Quaternion.identity, transform);
+                newCell.name = $"Cell ({x}, {y})";
                 position.x += cellPrefab.transform.localScale.x;
+                GameManager.cells[x, y] = newCell.GetComponent<Cell>();
 
                 // set colors like in chessboard
-                if ((i + j) % 2 == 0)
+                if ((y + x) % 2 == 0)
                     newCell.transform.GetChild(0).GetComponent<SpriteRenderer>().color = color1;
                 else
                     newCell.transform.GetChild(0).GetComponent<SpriteRenderer>().color = color2;
