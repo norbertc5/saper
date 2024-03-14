@@ -31,6 +31,8 @@ public class Grid : MonoBehaviour
                 newCell.name = $"Cell ({x}, {y})";
                 position.x += cellPrefab.transform.localScale.x;
                 GameManager.cells[x, y] = newCell.GetComponent<Cell>();
+                GameManager.cells[x, y].xId = x;
+                GameManager.cells[x, y].yId = y;
 
                 // set colors like in chessboard
                 if ((y + x) % 2 == 0)
