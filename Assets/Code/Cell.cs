@@ -12,12 +12,25 @@ public class Cell : MonoBehaviour
     public int yId;
     public int closeMines;
 
+    static bool hasClicked;
+
     TextMeshPro text;
 
     private void Awake()
     {
         text = GetComponentInChildren<TextMeshPro>();
-        GameManager.action += SetNumbers;
+        GameManager.setNumbers += SetNumbers;
+    }
+
+    private void OnMouseDown()
+    {
+        if(!hasClicked)
+        {
+            GameManager.setMines?.Invoke(xId, yId);
+            hasClicked = true;
+        }
+
+        transform.GetChild(2).gameObject.SetActive(true);
     }
 
     /// <summary>
@@ -36,6 +49,8 @@ public class Cell : MonoBehaviour
     {
         if (!hasMine)
             return;
+
+        //transform.GetChild(3).gameObject.SetActive(true);
 
         // get cells around mine and set the texts
         for (int i = -1; i < 2; i++)
