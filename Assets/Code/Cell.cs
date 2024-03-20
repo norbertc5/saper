@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using System;
-using System.Drawing;
 
 public class Cell : MonoBehaviour
 {
@@ -11,6 +10,8 @@ public class Cell : MonoBehaviour
     public int xId;
     public int yId;
     public int closeMines;
+    public char content = ' ';
+    public bool hasBeenScanned;
 
     static bool hasClicked;
 
@@ -20,6 +21,7 @@ public class Cell : MonoBehaviour
     {
         text = GetComponentInChildren<TextMeshPro>();
         GameManager.setNumbers += SetNumbers;
+        content = ' ';
     }
 
     private void OnMouseDown()
@@ -30,7 +32,10 @@ public class Cell : MonoBehaviour
             hasClicked = true;
         }
 
-        transform.GetChild(2).gameObject.SetActive(true);
+        if (content == ' ')
+            Scan();
+
+        SetText(content.ToString());
     }
 
     /// <summary>
@@ -64,8 +69,45 @@ public class Cell : MonoBehaviour
                     if (!cell.hasMine)
                     {
                         cell.closeMines++;
-                        cell.SetText(cell.closeMines.ToString()); 
+                        cell.content = cell.closeMines.ToString()[0];
+                        //cell.SetText(cell.closeMines.ToString()); 
                     }
+                }
+                catch(Exception e)
+                {
+                    Debug.Log(e);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Invoked when player has clicked on empty cell (i.e. with no mine and number)
+    /// Next determines empty cells in neighbourhood and reveals numbers around empty area
+    /// </summary>
+    public void Scan()
+    {
+        if (hasBeenScanned)
+            return;
+
+        Debug.Log("scan");
+
+        for (int i = -1; i < 2; i++)
+        {
+            for (int j = -1; j < 2; j++)
+            {
+                try
+                {
+                    Cell cell = GameManager.cells[xId + j, yId + i];
+                    hasBeenScanned = true;
+
+                    if (cell.content == ' ')
+                    {
+                        //cell.transform.GetChild(0).GetComponent<SpriteRenderer>().color = Color.blue;
+                        cell.Scan();
+                    }
+                    else
+                        cell.SetText(cell.content.ToString());
                 }
                 catch(Exception e)
                 {

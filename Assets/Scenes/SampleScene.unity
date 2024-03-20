@@ -420,7 +420,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e14a4db11122a2f4ba1d356a322463dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minesAmount: 5
+  minesAmount: 20
+  distanceToMine: 3
 --- !u!4 &1110289380
 Transform:
   m_ObjectHideFlags: 0

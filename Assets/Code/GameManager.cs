@@ -16,6 +16,11 @@ public class GameManager : MonoBehaviour
     public static MinesAction setMines;
     public static NumbersAction setNumbers;
 
+    /*
+     * First click sets mines postions
+     * Next, each click reveals one cell
+    */
+
     // Start is called before the first frame update
     void Start()
     {
@@ -50,7 +55,8 @@ public class GameManager : MonoBehaviour
             }
 
             cell.hasMine = true;
-            cell.SetText("M");
+            cell.content = 'M';
+            //cell.SetText("M");
         }
         // after drawing mines set numbers
         setNumbers?.Invoke();
