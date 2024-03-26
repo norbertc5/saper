@@ -6,16 +6,20 @@ using System;
 
 public class Cell : MonoBehaviour
 {
-    public bool hasMine;
-    public int xId;
-    public int yId;
-    public int closeMines;
-    public char content = ' ';
-    public bool hasBeenScanned;
+    [HideInInspector] public bool hasMine;
+    [HideInInspector] public int xId;
+    [HideInInspector] public int yId;
+    [HideInInspector] public char content = ' ';
 
     static bool hasClicked;
 
-    TextMeshPro text;
+    [Tooltip("How much red is adding to sprite's color after click.")]
+    [SerializeField] private float redColorAmount = 0.5f;
+
+    private TextMeshPro text;
+    private bool hasChangedColor;
+    private bool hasBeenScanned;
+    private int closeMines;
 
     private void Awake()
     {
@@ -36,6 +40,8 @@ public class Cell : MonoBehaviour
             Scan();
 
         SetText(content.ToString());
+        ChangeColor(this);
+        GameManager.cellFrame.transform.position = transform.position - transform.localScale / 2;
     }
 
     /// <summary>
@@ -70,7 +76,6 @@ public class Cell : MonoBehaviour
                     {
                         cell.closeMines++;
                         cell.content = cell.closeMines.ToString()[0];
-                        //cell.SetText(cell.closeMines.ToString()); 
                     }
                 }
                 catch(Exception e)
@@ -90,8 +95,6 @@ public class Cell : MonoBehaviour
         if (hasBeenScanned)
             return;
 
-        Debug.Log("scan");
-
         for (int i = -1; i < 2; i++)
         {
             for (int j = -1; j < 2; j++)
@@ -100,12 +103,10 @@ public class Cell : MonoBehaviour
                 {
                     Cell cell = GameManager.cells[xId + j, yId + i];
                     hasBeenScanned = true;
+                    ChangeColor(cell);
 
                     if (cell.content == ' ')
-                    {
-                        //cell.transform.GetChild(0).GetComponent<SpriteRenderer>().color = Color.blue;
                         cell.Scan();
-                    }
                     else
                         cell.SetText(cell.content.ToString());
                 }
@@ -115,5 +116,18 @@ public class Cell : MonoBehaviour
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Change color to yellow.
+    /// </summary>
+    /// <param name="cell"></param>
+    void ChangeColor(Cell cell)
+    {
+        if (cell.hasChangedColor)
+            return;
+        
+        cell.GetComponentInChildren<SpriteRenderer>().color += new Color(redColorAmount, 0, 0, 0);
+        cell.hasChangedColor = true;
     }
 }

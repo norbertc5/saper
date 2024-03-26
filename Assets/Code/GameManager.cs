@@ -10,6 +10,7 @@ public class GameManager : MonoBehaviour
     public static Cell[,] cells;
     public static int width;
     public static int height;
+    public static LineRenderer cellFrame;
 
     public delegate void MinesAction(int x, int y);
     public delegate void NumbersAction();
@@ -20,6 +21,11 @@ public class GameManager : MonoBehaviour
      * First click sets mines postions
      * Next, each click reveals one cell
     */
+
+    private void Awake()
+    {
+        cellFrame = FindObjectOfType<LineRenderer>();
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -35,7 +41,6 @@ public class GameManager : MonoBehaviour
     {
         for (int i = 0; i < minesAmount; i++)
         {
-            Debug.Log("wyk");
             int randX = Random.Range(0, width), randY = Random.Range(0, height);
 
             // mines won't appear near the first revealed cell
@@ -56,7 +61,6 @@ public class GameManager : MonoBehaviour
 
             cell.hasMine = true;
             cell.content = 'M';
-            //cell.SetText("M");
         }
         // after drawing mines set numbers
         setNumbers?.Invoke();
