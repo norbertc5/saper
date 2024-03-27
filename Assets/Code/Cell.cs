@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using System;
+using Unity.VisualScripting;
+using UnityEngine.EventSystems;
 
 public class Cell : MonoBehaviour
 {
@@ -10,6 +12,7 @@ public class Cell : MonoBehaviour
     [HideInInspector] public int xId;
     [HideInInspector] public int yId;
     [HideInInspector] public char content = ' ';
+    public bool hasRevealed;
 
     static bool hasClicked;
 
@@ -21,6 +24,9 @@ public class Cell : MonoBehaviour
     private bool hasBeenScanned;
     private int closeMines;
 
+    delegate void d();
+    d f;
+
     private void Awake()
     {
         text = GetComponentInChildren<TextMeshPro>();
@@ -28,20 +34,45 @@ public class Cell : MonoBehaviour
         content = ' ';
     }
 
+    /*IEnumerator Start()
+    {
+        yield return new WaitForSeconds(1);
+
+        f += () => SetText("aa");
+        f += () => { GetComponentInChildren<SpriteRenderer>().color = Color.blue; };
+        f();
+    }*/
+
     private void OnMouseDown()
     {
-        if(!hasClicked)
+        // when cursor is over ui or player clicked on already revealed cell, do nothing
+        if (EventSystem.current.IsPointerOverGameObject() || hasRevealed)
+            return;
+
+        if (!hasClicked)
         {
             GameManager.setMines?.Invoke(xId, yId);
+
+            if (content == ' ')
+                Scan();
+
             hasClicked = true;
+            return;
         }
 
-        if (content == ' ')
-            Scan();
+        GameManager.SetCellFrame(transform.position, transform.localScale.x);
+        GameManager.digButton.gameObject.SetActive(true);
 
-        SetText(content.ToString());
-        ChangeColor(this);
-        GameManager.cellFrame.transform.position = transform.position - transform.localScale / 2;
+        // update digButton on click
+        GameManager.digButton.onClick.RemoveAllListeners();
+        GameManager.digButton.onClick.AddListener(() => {
+            SetText(content.ToString());
+            ChangeColor(this);
+            hasRevealed = true;
+            GameManager.SetGUIActive(false);
+            if (content == ' ')
+                Scan();
+        });
     }
 
     /// <summary>
@@ -103,6 +134,7 @@ public class Cell : MonoBehaviour
                 {
                     Cell cell = GameManager.cells[xId + j, yId + i];
                     hasBeenScanned = true;
+                    cell.hasRevealed = true;
                     ChangeColor(cell);
 
                     if (cell.content == ' ')
