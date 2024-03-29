@@ -12,7 +12,8 @@ public class Cell : MonoBehaviour
     [HideInInspector] public int xId;
     [HideInInspector] public int yId;
     [HideInInspector] public char content = ' ';
-    public bool hasRevealed;
+    [HideInInspector] public bool hasRevealed;
+    [HideInInspector] public bool isFlagged;
 
     static bool hasClicked;
 
@@ -49,6 +50,7 @@ public class Cell : MonoBehaviour
         if (EventSystem.current.IsPointerOverGameObject() || hasRevealed)
             return;
 
+        // the first click reveals part of the board without using gui
         if (!hasClicked)
         {
             GameManager.setMines?.Invoke(xId, yId);
@@ -57,21 +59,44 @@ public class Cell : MonoBehaviour
                 Scan();
 
             hasClicked = true;
+            StartCoroutine(GameManager.CountUnrevealed());
             return;
         }
 
-        GameManager.SetCellFrame(transform.position, transform.localScale.x);
-        GameManager.digButton.gameObject.SetActive(true);
+        GameManager.SetCellFrame(transform.position);
 
         // update digButton on click
         GameManager.digButton.onClick.RemoveAllListeners();
         GameManager.digButton.onClick.AddListener(() => {
+
+            if (transform.GetChild(2).gameObject.activeSelf)
+                return;
+
+            if (hasMine)
+            {
+                GameManager.GameOver();
+                return;
+            }
+
             SetText(content.ToString());
             ChangeColor(this);
             hasRevealed = true;
             GameManager.SetGUIActive(false);
+            StartCoroutine(GameManager.CountUnrevealed());
+
             if (content == ' ')
                 Scan();
+
+        });
+
+        // update mineButton on click
+        GameManager.mineButton.onClick.RemoveAllListeners();
+        GameManager.mineButton.onClick.AddListener(() => {
+            GameObject flagObj = transform.GetChild(2).gameObject;
+            flagObj.SetActive(!flagObj.activeSelf);
+            isFlagged = !isFlagged;
+            GameManager.SetGUIActive(false);
+            StartCoroutine(GameManager.CountUnrevealed());
         });
     }
 
@@ -111,7 +136,7 @@ public class Cell : MonoBehaviour
                 }
                 catch(Exception e)
                 {
-                    Debug.Log(e);
+                    //Debug.Log(e);
                 }
             }
         }
@@ -140,11 +165,13 @@ public class Cell : MonoBehaviour
                     if (cell.content == ' ')
                         cell.Scan();
                     else
+                    {
                         cell.SetText(cell.content.ToString());
+                    }
                 }
                 catch(Exception e)
                 {
-                    Debug.Log(e);
+                    //Debug.Log(e);
                 }
             }
         }
@@ -158,7 +185,8 @@ public class Cell : MonoBehaviour
     {
         if (cell.hasChangedColor)
             return;
-        
+
+        GameManager.unrevealesCellsAmount--;
         cell.GetComponentInChildren<SpriteRenderer>().color += new Color(redColorAmount, 0, 0, 0);
         cell.hasChangedColor = true;
     }

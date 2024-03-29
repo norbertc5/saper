@@ -392,6 +392,8 @@ MonoBehaviour:
   xId: 0
   yId: 0
   content: 32
+  hasRevealed: 0
+  isFlagged: 0
   redColorAmount: 0.7
 --- !u!61 &8176794976051251887
 BoxCollider2D:

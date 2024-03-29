@@ -7,8 +7,9 @@ using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    [SerializeField] private int minesAmount = 5;
+    [SerializeField] private static int minesAmount = 5;
     [SerializeField] private int distanceToMine = 3;
+    public static int unrevealesCellsAmount;
 
     public static Cell[,] cells;
     public static int width;
@@ -20,6 +21,7 @@ public class GameManager : MonoBehaviour
     public static MinesAction setMines;
     public static NumbersAction setNumbers;
     public static Button digButton;
+    public static Button mineButton;
 
     /*
      * First click sets mines postions
@@ -29,7 +31,8 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         cellFrame = FindObjectOfType<LineRenderer>();
-        digButton = FindObjectOfType<Button>();
+        digButton = FindObjectsOfType<Button>()[1];
+        mineButton = FindObjectsOfType<Button>()[0];
     }
 
     // Start is called before the first frame update
@@ -37,6 +40,7 @@ public class GameManager : MonoBehaviour
     {
         // firstly generate mines
         setMines += SetMines;
+        unrevealesCellsAmount = width * height;
     }
 
     private void Update()
@@ -90,10 +94,9 @@ public class GameManager : MonoBehaviour
     /// </summary>
     /// <param name="pos"></param>
     /// <param name="cellSize"></param>
-    public static void SetCellFrame(Vector2 pos, float cellSize)
+    public static void SetCellFrame(Vector2 pos)
     {
-        cellFrame.transform.position = pos - new Vector2(cellSize, cellSize) / 2;
-        digButton.transform.position = pos + Vector2.up / 2;
+        cellFrame.transform.parent.position = pos;
     }
 
     /// <summary>
@@ -103,5 +106,33 @@ public class GameManager : MonoBehaviour
     public static void SetGUIActive(bool value)
     {
         cellFrame.transform.parent.gameObject.SetActive(value);
+    }
+
+    /// <summary>
+    /// Determines how many cells are still unrevealed.
+    /// </summary>
+    /// <returns></returns>
+    public static IEnumerator CountUnrevealed()
+    {
+        yield return new WaitForSeconds(.1f);  // delay to let all cells to reveal
+
+        // I've tried to make it better performance by just decrement unrevealesCellsAmount but it was making issues
+        int revealedCellsAmount = 0;
+        foreach (Cell cell in cells)
+        {
+            if (cell.hasRevealed || cell.isFlagged)
+            {
+                revealedCellsAmount++;
+            }
+        }
+        unrevealesCellsAmount = 81 - revealedCellsAmount;
+
+        if (unrevealesCellsAmount <= 0)
+            Debug.Log("Wszystkie pola ods³oniête lub oflagowane");
+    }
+
+    public static void GameOver()
+    {
+        Debug.Log("Game Over");
     }
 }
