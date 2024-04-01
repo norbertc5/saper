@@ -7,14 +7,15 @@ using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    [SerializeField] private static int minesAmount = 5;
+    [SerializeField] public static int minesAmount = 5;
     [SerializeField] private int distanceToMine = 3;
-    public static int unrevealesCellsAmount;
 
     public static Cell[,] cells;
+    public static List<Cell> cellsWithMine = new List<Cell>();
     public static int width;
     public static int height;
     static LineRenderer cellFrame;
+    public static int placedFlags;
 
     public delegate void MinesAction(int x, int y);
     public delegate void NumbersAction();
@@ -33,6 +34,7 @@ public class GameManager : MonoBehaviour
         cellFrame = FindObjectOfType<LineRenderer>();
         digButton = FindObjectsOfType<Button>()[1];
         mineButton = FindObjectsOfType<Button>()[0];
+        SetGUIActive(false);
     }
 
     // Start is called before the first frame update
@@ -40,7 +42,6 @@ public class GameManager : MonoBehaviour
     {
         // firstly generate mines
         setMines += SetMines;
-        unrevealesCellsAmount = width * height;
     }
 
     private void Update()
@@ -84,6 +85,7 @@ public class GameManager : MonoBehaviour
 
             cell.hasMine = true;
             cell.content = 'M';
+            cellsWithMine.Add(cell);
         }
         // after drawing mines set numbers
         setNumbers?.Invoke();
@@ -106,29 +108,6 @@ public class GameManager : MonoBehaviour
     public static void SetGUIActive(bool value)
     {
         cellFrame.transform.parent.gameObject.SetActive(value);
-    }
-
-    /// <summary>
-    /// Determines how many cells are still unrevealed.
-    /// </summary>
-    /// <returns></returns>
-    public static IEnumerator CountUnrevealed()
-    {
-        yield return new WaitForSeconds(.1f);  // delay to let all cells to reveal
-
-        // I've tried to make it better performance by just decrement unrevealesCellsAmount but it was making issues
-        int revealedCellsAmount = 0;
-        foreach (Cell cell in cells)
-        {
-            if (cell.hasRevealed || cell.isFlagged)
-            {
-                revealedCellsAmount++;
-            }
-        }
-        unrevealesCellsAmount = 81 - revealedCellsAmount;
-
-        if (unrevealesCellsAmount <= 0)
-            Debug.Log("Wszystkie pola ods³oniête lub oflagowane");
     }
 
     public static void GameOver()

@@ -14,6 +14,7 @@ public class Cell : MonoBehaviour
     [HideInInspector] public char content = ' ';
     [HideInInspector] public bool hasRevealed;
     [HideInInspector] public bool isFlagged;
+    //static int unrevealesCellsAmount;
 
     static bool hasClicked;
 
@@ -25,24 +26,12 @@ public class Cell : MonoBehaviour
     private bool hasBeenScanned;
     private int closeMines;
 
-    delegate void d();
-    d f;
-
     private void Awake()
     {
         text = GetComponentInChildren<TextMeshPro>();
         GameManager.setNumbers += SetNumbers;
         content = ' ';
     }
-
-    /*IEnumerator Start()
-    {
-        yield return new WaitForSeconds(1);
-
-        f += () => SetText("aa");
-        f += () => { GetComponentInChildren<SpriteRenderer>().color = Color.blue; };
-        f();
-    }*/
 
     private void OnMouseDown()
     {
@@ -59,7 +48,6 @@ public class Cell : MonoBehaviour
                 Scan();
 
             hasClicked = true;
-            StartCoroutine(GameManager.CountUnrevealed());
             return;
         }
 
@@ -82,21 +70,51 @@ public class Cell : MonoBehaviour
             ChangeColor(this);
             hasRevealed = true;
             GameManager.SetGUIActive(false);
-            StartCoroutine(GameManager.CountUnrevealed());
 
             if (content == ' ')
                 Scan();
 
+            int unrevealedCellsAmount = CountUnrevealed();
+            Debug.Log(unrevealedCellsAmount);
+            if (unrevealedCellsAmount <= GameManager.minesAmount)
+            {
+                Debug.Log("Zosta³y tylko kafelki z minami");
+            }
         });
 
         // update mineButton on click
         GameManager.mineButton.onClick.RemoveAllListeners();
-        GameManager.mineButton.onClick.AddListener(() => {
+        GameManager.mineButton.onClick.AddListener(() => 
+        {
+            isFlagged = !isFlagged;
+            GameManager.placedFlags = (isFlagged) ? ++GameManager.placedFlags : --GameManager.placedFlags;
+            if (GameManager.placedFlags > GameManager.minesAmount)
+            {
+                Debug.Log("Nie mo¿esz postawiæ wiêcej min");
+                return;
+            }
+
             GameObject flagObj = transform.GetChild(2).gameObject;
             flagObj.SetActive(!flagObj.activeSelf);
-            isFlagged = !isFlagged;
             GameManager.SetGUIActive(false);
-            StartCoroutine(GameManager.CountUnrevealed());
+         
+            if (GameManager.placedFlags >= GameManager.minesAmount)
+            {
+                // check if all mines are flagged
+                int correctFlags = 0;
+
+                GameManager.cellsWithMine.ForEach((Cell c) => { 
+                    if(c.isFlagged)
+                    {
+                        correctFlags++;
+                    }
+                });
+
+                if(correctFlags >= GameManager.minesAmount)
+                {
+                    Debug.Log("Wszystkie miny zaznaczone");
+                }
+            }
         });
     }
 
@@ -186,8 +204,26 @@ public class Cell : MonoBehaviour
         if (cell.hasChangedColor)
             return;
 
-        GameManager.unrevealesCellsAmount--;
+        //unrevealesCellsAmount--;
         cell.GetComponentInChildren<SpriteRenderer>().color += new Color(redColorAmount, 0, 0, 0);
         cell.hasChangedColor = true;
+    }
+
+    /// <summary>
+    /// Determines how many cells are still unrevealed.
+    /// </summary>
+    /// <returns></returns>
+    int CountUnrevealed()
+    {
+        // I've tried to make it better performance by just decrement unrevealesCellsAmount but it was making issues
+        int revealedCellsAmount = 0;
+        foreach (Cell cell in GameManager.cells)
+        {
+            if (cell.hasRevealed || cell.isFlagged)
+            {
+                revealedCellsAmount++;
+            }
+        }
+        return GameManager.width * GameManager.height - revealedCellsAmount;
     }
 }
