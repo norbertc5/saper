@@ -1,60 +1,87 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    [SerializeField] public static int minesAmount = 5;
     [SerializeField] private int distanceToMine = 3;
+    private bool canReloadScene;
+    private static bool isGameOver;
 
-    public static Cell[,] cells;
-    public static List<Cell> cellsWithMine = new List<Cell>();
+    public static int minesAmount = 5;
     public static int width;
     public static int height;
-    static LineRenderer cellFrame;
     public static int placedFlags;
+
+    // references from scene
+    public static Cell[,] cells;
+    public static List<Cell> cellsWithMine = new List<Cell>();
+    private static LineRenderer cellFrame;
+    private static GameObject gameOverPanel;
+    public static Button digButton;
+    public static Button mineButton;
 
     public delegate void MinesAction(int x, int y);
     public delegate void NumbersAction();
     public static MinesAction setMines;
     public static NumbersAction setNumbers;
-    public static Button digButton;
-    public static Button mineButton;
+    public static TextMeshProUGUI minesAmountDisplay;
 
     /*
      * First click sets mines postions
      * Next, each click reveals one cell
     */
 
-    private void Awake()
+    // Start is called before the first frame update
+    void Start()
     {
         cellFrame = FindObjectOfType<LineRenderer>();
         digButton = FindObjectsOfType<Button>()[1];
         mineButton = FindObjectsOfType<Button>()[0];
+        minesAmountDisplay = GameObject.Find("MinesAmountDisplay").GetComponent<TextMeshProUGUI>();
+        gameOverPanel = GameObject.Find("GameOverPanel");
         SetGUIActive(false);
-    }
+        gameOverPanel.SetActive(false);
+        isGameOver = false;
+        placedFlags = 0;
 
-    // Start is called before the first frame update
-    void Start()
-    {
         // firstly generate mines
         setMines += SetMines;
     }
 
+    private void OnDisable()
+    {
+        setMines -= SetMines;
+    }
+
     private void Update()
     {
-        // it determines if after click gui shows
-        if(Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+        if (Input.touchCount > 0)
         {
-            RaycastHit2D hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
+            Touch t = Input.GetTouch(0);
+            // it determines if after click gui shows
+            if (t.phase == TouchPhase.Began && !EventSystem.current.IsPointerOverGameObject(t.fingerId))
+            {
+                RaycastHit2D hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(t.position), Vector2.zero);
 
-            if(hit)
-                SetGUIActive(!hit.collider.GetComponent<Cell>().hasRevealed);
-            else
-                SetGUIActive(false);
+                if (hit)
+                    SetGUIActive(!hit.collider.GetComponent<Cell>().hasRevealed);
+                else
+                    SetGUIActive(false);
+            }
+        }
+        else if(gameOverPanel.activeSelf)
+            canReloadScene = true;
+
+        // reload scene when game over and tap on screen
+        if (isGameOver && Input.touchCount > 0 && canReloadScene)
+        {
+            SceneManager.LoadScene(0);
         }
     }
 
@@ -113,5 +140,7 @@ public class GameManager : MonoBehaviour
     public static void GameOver()
     {
         Debug.Log("Game Over");
+        gameOverPanel.SetActive(true);
+        isGameOver = true;
     }
 }

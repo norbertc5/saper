@@ -14,7 +14,6 @@ public class Cell : MonoBehaviour
     [HideInInspector] public char content = ' ';
     [HideInInspector] public bool hasRevealed;
     [HideInInspector] public bool isFlagged;
-    //static int unrevealesCellsAmount;
 
     static bool hasClicked;
 
@@ -26,11 +25,17 @@ public class Cell : MonoBehaviour
     private bool hasBeenScanned;
     private int closeMines;
 
-    private void Awake()
+    private void Start()
     {
         text = GetComponentInChildren<TextMeshPro>();
         GameManager.setNumbers += SetNumbers;
         content = ' ';
+        hasClicked = false;
+    }
+
+    private void OnDisable()
+    {
+        GameManager.setNumbers -= SetNumbers;
     }
 
     private void OnMouseDown()
@@ -75,7 +80,6 @@ public class Cell : MonoBehaviour
                 Scan();
 
             int unrevealedCellsAmount = CountUnrevealed();
-            Debug.Log(unrevealedCellsAmount);
             if (unrevealedCellsAmount <= GameManager.minesAmount)
             {
                 Debug.Log("Zosta³y tylko kafelki z minami");
@@ -88,11 +92,15 @@ public class Cell : MonoBehaviour
         {
             isFlagged = !isFlagged;
             GameManager.placedFlags = (isFlagged) ? ++GameManager.placedFlags : --GameManager.placedFlags;
+
             if (GameManager.placedFlags > GameManager.minesAmount)
             {
                 Debug.Log("Nie mo¿esz postawiæ wiêcej min");
+                GameManager.placedFlags = GameManager.minesAmount;
+                isFlagged= false;
                 return;
             }
+            GameManager.minesAmountDisplay.text = (GameManager.minesAmount - GameManager.placedFlags).ToString();
 
             GameObject flagObj = transform.GetChild(2).gameObject;
             flagObj.SetActive(!flagObj.activeSelf);
