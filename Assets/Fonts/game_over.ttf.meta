@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: e1f88cb44bc589c43b0aed67afa46a8f
+guid: a8da5c649ffd3c042867bf6fff96416c
 TrueTypeFontImporter:
   externalObjects: {}
   serializedVersion: 4
@@ -9,7 +9,7 @@ TrueTypeFontImporter:
   characterPadding: 1
   includeFontData: 1
   fontNames:
-  - Pixellari
+  - Game Over
   fallbackFontReferences: []
   customCharacters: 
   fontRenderingMode: 0

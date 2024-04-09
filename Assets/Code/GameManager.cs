@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using Unity.VisualScripting;
@@ -11,9 +10,9 @@ public class GameManager : MonoBehaviour
 {
     [SerializeField] private int distanceToMine = 3;
     private bool canReloadScene;
-    private static bool isGameOver;
+    private static bool isEnd;
 
-    public static int minesAmount = 5;
+    public static int minesAmount = 18;
     public static int width;
     public static int height;
     public static int placedFlags;
@@ -25,12 +24,14 @@ public class GameManager : MonoBehaviour
     private static GameObject gameOverPanel;
     public static Button digButton;
     public static Button mineButton;
+    public static TextMeshProUGUI minesAmountDisplay;
+    public static RaycastHit2D touchedObject;
 
     public delegate void MinesAction(int x, int y);
     public delegate void NumbersAction();
     public static MinesAction setMines;
     public static NumbersAction setNumbers;
-    public static TextMeshProUGUI minesAmountDisplay;
+    public static NumbersAction showMines;
 
     /*
      * First click sets mines postions
@@ -47,8 +48,9 @@ public class GameManager : MonoBehaviour
         gameOverPanel = GameObject.Find("GameOverPanel");
         SetGUIActive(false);
         gameOverPanel.SetActive(false);
-        isGameOver = false;
+        isEnd = false;
         placedFlags = 0;
+        minesAmountDisplay.text = minesAmount.ToString();
 
         // firstly generate mines
         setMines += SetMines;
@@ -57,6 +59,7 @@ public class GameManager : MonoBehaviour
     private void OnDisable()
     {
         setMines -= SetMines;
+        showMines = null;
     }
 
     private void Update()
@@ -67,10 +70,10 @@ public class GameManager : MonoBehaviour
             // it determines if after click gui shows
             if (t.phase == TouchPhase.Began && !EventSystem.current.IsPointerOverGameObject(t.fingerId))
             {
-                RaycastHit2D hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(t.position), Vector2.zero);
+                touchedObject = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(t.position), Vector2.zero);
 
-                if (hit)
-                    SetGUIActive(!hit.collider.GetComponent<Cell>().hasRevealed);
+                if (touchedObject && Cell.hasFirstClicked)
+                    SetGUIActive(!touchedObject.collider.GetComponent<Cell>().hasRevealed, touchedObject.collider.GetComponent<Cell>().xId);
                 else
                     SetGUIActive(false);
             }
@@ -79,7 +82,7 @@ public class GameManager : MonoBehaviour
             canReloadScene = true;
 
         // reload scene when game over and tap on screen
-        if (isGameOver && Input.touchCount > 0 && canReloadScene)
+        if (isEnd && Input.touchCount > 0 && canReloadScene)
         {
             SceneManager.LoadScene(0);
         }
@@ -111,7 +114,7 @@ public class GameManager : MonoBehaviour
             }
 
             cell.hasMine = true;
-            cell.content = 'M';
+            showMines += () => { cell.transform.GetChild(3).gameObject.SetActive(true); };
             cellsWithMine.Add(cell);
         }
         // after drawing mines set numbers
@@ -132,15 +135,27 @@ public class GameManager : MonoBehaviour
     /// Shows or hides cellFrame and button above it. 
     /// </summary>
     /// <param name="value"></param>
-    public static void SetGUIActive(bool value)
+    public static void SetGUIActive(bool value, int column = -1)
     {
-        cellFrame.transform.parent.gameObject.SetActive(value);
+        GameObject guiObj = cellFrame.transform.parent.gameObject;
+        guiObj.SetActive(value);
+
+        // flip buttons if clicked on right side of the board and vice versa
+        if (column == -1)
+            return;
+        
+        int xScale = (column > width / 2) ? -1 : 1;
+        guiObj.transform.Find("DigButton").localScale = new Vector2(.45f * xScale, .45f);
+        guiObj.transform.Find("MineButton").localScale = new Vector2(.45f * xScale, .45f);
+        guiObj.transform.localScale = new Vector2(4*xScale, 4);
     }
 
-    public static void GameOver()
+    public static void EndGame(string text)
     {
-        Debug.Log("Game Over");
+        //Debug.Log("End");
+        gameOverPanel.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = text;
         gameOverPanel.SetActive(true);
-        isGameOver = true;
+        isEnd = true;
+        SetGUIActive(false);
     }
 }

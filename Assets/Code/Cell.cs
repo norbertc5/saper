@@ -15,7 +15,7 @@ public class Cell : MonoBehaviour
     [HideInInspector] public bool hasRevealed;
     [HideInInspector] public bool isFlagged;
 
-    static bool hasClicked;
+    public static bool hasFirstClicked;
 
     [Tooltip("How much red is adding to sprite's color after click.")]
     [SerializeField] private float redColorAmount = 0.5f;
@@ -30,7 +30,7 @@ public class Cell : MonoBehaviour
         text = GetComponentInChildren<TextMeshPro>();
         GameManager.setNumbers += SetNumbers;
         content = ' ';
-        hasClicked = false;
+        hasFirstClicked = false;
     }
 
     private void OnDisable()
@@ -38,92 +38,98 @@ public class Cell : MonoBehaviour
         GameManager.setNumbers -= SetNumbers;
     }
 
-    private void OnMouseDown()
+    private void Update()
     {
-        // when cursor is over ui or player clicked on already revealed cell, do nothing
-        if (EventSystem.current.IsPointerOverGameObject() || hasRevealed)
-            return;
-
-        // the first click reveals part of the board without using gui
-        if (!hasClicked)
+        if (Input.touchCount > 0)
         {
-            GameManager.setMines?.Invoke(xId, yId);
+            Touch touch = Input.GetTouch(0);
 
-            if (content == ' ')
-                Scan();
-
-            hasClicked = true;
-            return;
-        }
-
-        GameManager.SetCellFrame(transform.position);
-
-        // update digButton on click
-        GameManager.digButton.onClick.RemoveAllListeners();
-        GameManager.digButton.onClick.AddListener(() => {
-
-            if (transform.GetChild(2).gameObject.activeSelf)
-                return;
-
-            if (hasMine)
+            if (touch.phase == TouchPhase.Began && GameManager.touchedObject.collider.GetComponent<Cell>() == this)
             {
-                GameManager.GameOver();
-                return;
-            }
+                // when cursor is over ui or player clicked on already revealed cell, do nothing
+                if (EventSystem.current.IsPointerOverGameObject(touch.fingerId) || hasRevealed)
+                    return;
 
-            SetText(content.ToString());
-            ChangeColor(this);
-            hasRevealed = true;
-            GameManager.SetGUIActive(false);
+                // the first click reveals part of the board without using gui
+                if (!hasFirstClicked)
+                {
+                    GameManager.setMines?.Invoke(xId, yId);
 
-            if (content == ' ')
-                Scan();
+                    if (content == ' ')
+                        Scan();
 
-            int unrevealedCellsAmount = CountUnrevealed();
-            if (unrevealedCellsAmount <= GameManager.minesAmount)
-            {
-                Debug.Log("Zosta³y tylko kafelki z minami");
-            }
-        });
+                    hasFirstClicked = true;
+                    return;
+                }
 
-        // update mineButton on click
-        GameManager.mineButton.onClick.RemoveAllListeners();
-        GameManager.mineButton.onClick.AddListener(() => 
-        {
-            isFlagged = !isFlagged;
-            GameManager.placedFlags = (isFlagged) ? ++GameManager.placedFlags : --GameManager.placedFlags;
+                GameManager.SetCellFrame(transform.position);
 
-            if (GameManager.placedFlags > GameManager.minesAmount)
-            {
-                Debug.Log("Nie mo¿esz postawiæ wiêcej min");
-                GameManager.placedFlags = GameManager.minesAmount;
-                isFlagged= false;
-                return;
-            }
-            GameManager.minesAmountDisplay.text = (GameManager.minesAmount - GameManager.placedFlags).ToString();
+                // update digButton on click
+                GameManager.digButton.onClick.RemoveAllListeners();
+                GameManager.digButton.onClick.AddListener(() =>
+                {
 
-            GameObject flagObj = transform.GetChild(2).gameObject;
-            flagObj.SetActive(!flagObj.activeSelf);
-            GameManager.SetGUIActive(false);
-         
-            if (GameManager.placedFlags >= GameManager.minesAmount)
-            {
-                // check if all mines are flagged
-                int correctFlags = 0;
+                    if (transform.GetChild(2).gameObject.activeSelf)
+                        return;
 
-                GameManager.cellsWithMine.ForEach((Cell c) => { 
-                    if(c.isFlagged)
+                    if (hasMine)
                     {
-                        correctFlags++;
+                        GameManager.EndGame("Game over.");
+                        GameManager.showMines?.Invoke();
+                        return;
                     }
+
+                    SetText(content.ToString());
+                    ChangeColor(this);
+                    hasRevealed = true;
+                    GameManager.SetGUIActive(false);
+
+                    if (content == ' ')
+                        Scan();
                 });
 
-                if(correctFlags >= GameManager.minesAmount)
+                // update mineButton on click
+                GameManager.mineButton.onClick.RemoveAllListeners();
+                GameManager.mineButton.onClick.AddListener(() =>
                 {
-                    Debug.Log("Wszystkie miny zaznaczone");
-                }
+                    isFlagged = !isFlagged;
+                    GameManager.placedFlags = (isFlagged) ? ++GameManager.placedFlags : --GameManager.placedFlags;
+
+                    if (GameManager.placedFlags > GameManager.minesAmount)
+                    {
+                        //Debug.Log("Nie mo¿esz postawiæ wiêcej min");
+                        GameManager.placedFlags = GameManager.minesAmount;
+                        isFlagged = false;
+                        return;
+                    }
+                    GameManager.minesAmountDisplay.text = (GameManager.minesAmount - GameManager.placedFlags).ToString();
+
+                    GameObject flagObj = transform.GetChild(2).gameObject;
+                    flagObj.SetActive(!flagObj.activeSelf);
+                    GameManager.SetGUIActive(false);
+
+                    if (GameManager.placedFlags >= GameManager.minesAmount)
+                    {
+                        // check if all mines are flagged
+                        int correctFlags = 0;
+
+                        GameManager.cellsWithMine.ForEach((Cell c) =>
+                        {
+                            if (c.isFlagged)
+                            {
+                                correctFlags++;
+                            }
+                        });
+
+                        if (correctFlags >= GameManager.minesAmount)
+                        {
+                            //Debug.Log("Wszystkie miny zaznaczone");
+                            GameManager.EndGame("You won.");
+                        }
+                    }
+                });
             }
-        });
+        }
     }
 
     /// <summary>
@@ -160,9 +166,8 @@ public class Cell : MonoBehaviour
                         cell.content = cell.closeMines.ToString()[0];
                     }
                 }
-                catch(Exception e)
+                catch
                 {
-                    //Debug.Log(e);
                 }
             }
         }
@@ -195,9 +200,8 @@ public class Cell : MonoBehaviour
                         cell.SetText(cell.content.ToString());
                     }
                 }
-                catch(Exception e)
+                catch
                 {
-                    //Debug.Log(e);
                 }
             }
         }
@@ -212,26 +216,7 @@ public class Cell : MonoBehaviour
         if (cell.hasChangedColor)
             return;
 
-        //unrevealesCellsAmount--;
         cell.GetComponentInChildren<SpriteRenderer>().color += new Color(redColorAmount, 0, 0, 0);
         cell.hasChangedColor = true;
-    }
-
-    /// <summary>
-    /// Determines how many cells are still unrevealed.
-    /// </summary>
-    /// <returns></returns>
-    int CountUnrevealed()
-    {
-        // I've tried to make it better performance by just decrement unrevealesCellsAmount but it was making issues
-        int revealedCellsAmount = 0;
-        foreach (Cell cell in GameManager.cells)
-        {
-            if (cell.hasRevealed || cell.isFlagged)
-            {
-                revealedCellsAmount++;
-            }
-        }
-        return GameManager.width * GameManager.height - revealedCellsAmount;
     }
 }
